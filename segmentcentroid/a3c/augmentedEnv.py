@@ -6,7 +6,7 @@ import numpy as np
 import ray
 from segmentcentroid.tfmodel.AtariVisionModel import AtariVisionModel
 import tensorflow as tf
-
+from ray.experimental.tf_utils import TensorFlowVariables
 class AugmentedEnv(gym.Env):
   metadata = {'render.modes': ['human']}
   
@@ -19,7 +19,7 @@ class AugmentedEnv(gym.Env):
     with g.as_default():
         model = AtariVisionModel(k,actiondim=(self.env.action_space.n,1))
         model.sess.run(tf.initialize_all_variables())
-        variables = ray.experimental.TensorFlowVariables(model.loss, model.sess)
+        variables = TensorFlowVariables(model.loss, model.sess)
 
         variables.set_weights(model_weights)
 

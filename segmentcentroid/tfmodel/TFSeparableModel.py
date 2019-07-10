@@ -3,7 +3,7 @@ import numpy as np
 from .TFModel import TFModel
 from segmentcentroid.inference.forwardbackward import ForwardBackward
 from tensorflow.python.client import timeline
-
+import tensorflow_probability as tfp
 
 class TFSeparableModel(TFModel):
     """
@@ -16,7 +16,9 @@ class TFSeparableModel(TFModel):
                  actiondim, 
                  k,
                  boundary_conditions,
-                 prior):
+                 prior,
+                 JSD_weight=0,
+                 entropy_weight=0):
         """
         Create a model from the parameters
 
@@ -28,7 +30,8 @@ class TFSeparableModel(TFModel):
 
         self.policy_networks = []
         self.transition_networks = []
-
+        self.JSD_weight = JSD_weight
+        self.entropy_weight = entropy_weight
         super(TFSeparableModel, self).__init__(statedim, actiondim, k, boundary_conditions, prior)
 
 
@@ -41,8 +44,12 @@ class TFSeparableModel(TFModel):
         loss_array = []
 
         pi_vars = []
+        logits = 0
+        entropies = []
         for i in range(0, self.k):
+            logits = logits + self.policy_networks[i]['logits']
             loss_array.append(self.policy_networks[i]['wlprob'])
+            entropies.append(self.policy_networks[i]['entropy'])
             pi_vars.append((self.policy_networks[i]['state'], 
                             self.policy_networks[i]['action'], 
                             self.policy_networks[i]['weight']))
@@ -54,7 +61,11 @@ class TFSeparableModel(TFModel):
                             self.transition_networks[i]['action'], 
                             self.transition_networks[i]['weight']))
 
-        return tf.reduce_sum(loss_array), pi_vars, psi_vars, loss_array
+        logits /= self.k
+        distr = tfp.distributions.Categorical(logits=logits)
+        entropy = distr.entropy()
+        entropy_reg = -1 * (self.JSD_weight * tf.reduce_sum(entropy) + (self.entropy_weight - self.JSD_weight / self.k) * tf.reduce_sum(entropies) )
+        return tf.reduce_sum(loss_array) + entropy_reg, pi_vars, psi_vars, loss_array
 
 
 

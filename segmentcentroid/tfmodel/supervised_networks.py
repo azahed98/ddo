@@ -3,7 +3,7 @@ import numpy as np
 import random
 import string
 import tensorflow.contrib.slim as slim
-
+import tensorflow_probability as tfp
 """
 This file is meant to be a model-zoo like file that creates 
 networks that can be used in other parts of the pipeline. These
@@ -272,7 +272,10 @@ def conv2a3c(sdim, adim, _hiddenLayer=32):
     logprob = tf.nn.softmax_cross_entropy_with_logits(logits=logit, labels=a)
 
     wlogprob = tf.multiply(tf.transpose(weight), logprob)
-        
+    
+    distr = tfp.distributions.Categorical(logits=logit)
+    entropy = distr.entropy()
+
     return {'state': x, 
                 'action': a, 
                 'weight': weight,
@@ -280,6 +283,8 @@ def conv2a3c(sdim, adim, _hiddenLayer=32):
                 'amax': tf.argmax(y, 1),
                 'lprob': logprob,
                 'wlprob': wlogprob,
+                'logits': logit,
+                'entropy': entropy,
                 'discrete': True}
 
 

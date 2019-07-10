@@ -13,9 +13,11 @@ class AtariVisionModel(TFSeparableModel):
     def __init__(self,  
                  k,
                  statedim=(42,42,1), 
-                 actiondim=(6,1)):
+                 actiondim=(6,1),
+                 JSD_weight=0,
+                 entropy_weight=0):
         
-        super(AtariVisionModel, self).__init__(statedim, actiondim, k, [0,0],'all')
+        super(AtariVisionModel, self).__init__(statedim, actiondim, k, [0,0],'all', JSD_weight, entropy_weight)
 
 
     def createPolicyNetwork(self):

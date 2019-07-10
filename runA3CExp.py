@@ -4,7 +4,7 @@ from segmentcentroid.tfmodel.AtariVisionModel import AtariVisionModel
 from segmentcentroid.a3c.augmentedEnv import AugmentedEnv
 from segmentcentroid.inference.forwardbackward import ForwardBackward
 import tensorflow as tf
-
+from ray.experimental.tf_utils import TensorFlowVariables
 import ray
 import gym
 
@@ -26,7 +26,7 @@ def runDDOI(env_name="PongDeterministic-v3",
     #initialize graph
     with g.as_default():
         a = AtariVisionModel(num_options, actiondim=(gym.make(env_name).action_space.n,1))
-        variables = ray.experimental.TensorFlowVariables(a.loss, a.sess)
+        variables = TensorFlowVariables(a.loss, a.sess)
 
         with tf.variable_scope("optimizer2"):
             opt = tf.train.AdamOptimizer(learning_rate=ddo_learning_rate)
@@ -67,14 +67,16 @@ def runDDO(env_name="PongDeterministic-v3",
            num_demonstrations_per=100,
            ddo_max_iters=100,
            ddo_vq_iters=100,
-           num_workers=1):
+           num_workers=1,
+           JSD_weight=0,
+           entropy_weight=0):
 
     g = tf.Graph()
 
     #initialize graph
     with g.as_default():
         a = AtariVisionModel(num_options, actiondim=(gym.make(env_name).action_space.n,1))
-        variables = ray.experimental.TensorFlowVariables(a.loss, a.sess)
+        variables = TensorFlowVariables(a.loss, a.sess)
 
         with tf.variable_scope("optimizer2"):
             opt = tf.train.AdamOptimizer(learning_rate=ddo_learning_rate)
@@ -134,10 +136,11 @@ def runAll(num_steps, envs, num_workers, outputfile='out.p'):
         else:
             rounds = 1
         
-        data = (runA3C(env_name=e, steps=num_steps, num_workers=num_workers),
+        data = (#runA3C(env_name=e, steps=num_steps, num_workers=num_workers),
                      runDDO(env_name=e, steps_per_discovery=num_steps, rounds=rounds, num_workers=num_workers),
-                     runDDOI(env_name=e, steps_per_discovery=num_steps, rounds=rounds, num_workers=num_workers))
-
+                     runDDO(env_name=e, steps_per_discovery=num_steps, rounds=rounds, num_workers=num_workers, JSD_weight=1.0, entropy_weight=0.5),
+                     #runDDOI(env_name=e, steps_per_discovery=num_steps, rounds=rounds, num_workers=num_workers)
+               )
         print("###Data", data)
         output.append(data)
 

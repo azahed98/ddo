@@ -8,7 +8,7 @@ import tensorflow.contrib.rnn as rnn
 import distutils.version
 import ray
 use_tf100_api = distutils.version.LooseVersion(tf.VERSION) >= distutils.version.LooseVersion('1.0.0')
-
+from ray.experimental.tf_utils import TensorFlowVariables
 class Policy(object):
     """Policy base class"""
 
@@ -65,7 +65,7 @@ class Policy(object):
     def initialize(self):
         with self.g.as_default():
             self.sess = tf.Session(graph=self.g,  config=tf.ConfigProto(intra_op_parallelism_threads=1, inter_op_parallelism_threads=2))
-            self.variables = ray.experimental.TensorFlowVariables(self.loss, self.sess)
+            self.variables = TensorFlowVariables(self.loss, self.sess)
             self.sess.run(tf.global_variables_initializer())
 
     def model_update(self, grads):

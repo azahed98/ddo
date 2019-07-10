@@ -7,7 +7,7 @@ import copy
 import numpy as np
 import ray
 import tensorflow as tf
-
+from ray.experimental.tf_utils import TensorFlowVariables
 ray.init(num_workers=1)
 
 
@@ -43,7 +43,7 @@ def gridWorldInit():
         
         m.sess.run(tf.initialize_all_variables())
 
-        variables = ray.experimental.TensorFlowVariables(m.loss, m.sess)
+        variables = TensorFlowVariables(m.loss, m.sess)
 
     return m, m.opt, t, variables
 
@@ -87,14 +87,14 @@ with tf.variable_scope("optimizer"):
 
     driver_gradients = opt.compute_gradients(m.loss)
 
-    variables = ray.experimental.TensorFlowVariables(m.loss, m.sess)
+    variables = TensorFlowVariables(m.loss, m.sess)
 
     vlist = [g for (g,v) in driver_gradients]
     
     update = opt.apply_gradients(driver_gradients)
 
 
-    variables = ray.experimental.TensorFlowVariables(m.loss, m.sess)
+    variables = TensorFlowVariables(m.loss, m.sess)
 
     for iter in range(0,1000):
 
